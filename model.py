@@ -7,6 +7,7 @@ import time
 import datetime
 
 def bidirectional_LSTM(X, time_step, X_len, hidden_size, output_dim):
+	print("  = bidirectional LSTM building   ")
 	lstm_fw_cell = tf.contrib.rnn.BasicLSTMCell(hidden_size)
 	lstm_bw_cell = tf.contrib.rnn.BasicLSTMCell(hidden_size)
 			
@@ -195,28 +196,40 @@ class BiDAF(object):
 		with tf.name_scope("Output_layer") as layer_scope:
 			print("****** Output layer ")
 			G_M = tf.concat([G, M], axis=1)
-			print('G_M : ', G_M)
+			print("G_M : ", G_M)
 			# (?, 10d, time step)
 			
 			w_p1 = tf.Variable(tf.random_normal([5*M.get_shape().as_list()[1]]))
+			print("w_p1 : ", w_p1)
 			# (?, 10d)
-			print('matmul w and G_M : ', tf.multiply(w_p1, G_M))
-			p1 = tf.nn.softmax(tf.reduce_sum(tf.multiply(w_p1, G_M), 1), 1)
-			print('p1 : ', p1)
 
+			w_p1 = tf.expand_dims(w_p1, 1)
+			w_p1 = tf.expand_dims(w_p1, 0)
+			p1 = tf.nn.softmax(tf.reduce_sum(tf.multiply(w_p1, G_M), 1), 1)
+			print("p1 : ", p1)
+			# (?, time step)
+
+			M = tf.unstack(M, con_time_step, 2)
+			# (batch_size, embedding_size) * time_step_size
 			M2 = bidirectional_LSTM(M, con_time_step, context_len, config.lstm_hidden_size, 1)
+			# (?, 2d, time step)
+	
 			G_M2 = tf.concat([G, M2], axis=1)
-			print('G_M : ', G_M2)
+			print("G_M : ", G_M2)
 			# (?, 10d, time step)
 
 			w_p2 = tf.Variable(tf.random_normal([5*M.get_shape().as_list()[1]]))
-			print('w_p2 : ', w_p2)
-			p2 = tf.nn.softmax(tf.reduce_sum(tf.multiply(w, G_M2), 1), 1)
-			print('p2 : ', p2)
+			print("w_p2 : ", w_p2)
+			# (?, 10d, time step)
 
+			w_p2 = tf.expand_dims(w_p2, 1)
+			w_p2 = tf.expand_dims(w_p2, 0)
+			p2 = tf.nn.softmax(tf.reduce_sum(tf.multiply(w_p2, G_M2), 1), 1)
+			print("p2 : ", p2)
+			# (?, time step)
 
 			'''
-			correct_pred = tf.equal(tf.argmax(pred,1), tf.argmax(self.y,1))
+			correct_pred = tf.equal(tf.argmax(p1,1), tf.argmax(p2,1))
 			self.accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
 
