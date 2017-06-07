@@ -4,10 +4,10 @@ import sys
 from tensorflow.contrib.tensorboard.plugins import projector
 import os
 import time
-import datetime
+
 
 def bidirectional_LSTM(X, time_step, X_len, hidden_size, output_dim):
-	print("  = bidirectional LSTM building   ")
+	print("  = call : bidirectional LSTM building   ")
 	lstm_fw_cell = tf.contrib.rnn.BasicLSTMCell(hidden_size)
 	lstm_bw_cell = tf.contrib.rnn.BasicLSTMCell(hidden_size)
 			
@@ -54,6 +54,8 @@ class BiDAF(object):
 		self.context_len = tf.placeholder(tf.int32, [None])
 		self.question_len = tf.placeholder(tf.int32, [None])
 		self.last_batch_idx = tf.placeholder(tf.int32, [None])
+		self.y1 = tf.placeholder(tf.int32, [None, None])
+		self.y2 = tf.placeholder(tf.int32, [None, None])
 
 		# initialize whole parameters
 		self.initialize()
@@ -73,7 +75,8 @@ class BiDAF(object):
 		print("G : ", self.G)
 		self.M = self.modeling_layer(config, self.G, self.con_time_step, self.context_len)
 		print("M : ", self.M)
-		self.O = self.output_layer(config, self.G, self.M, self.con_time_step, self.context_len)
+		self.O = self.output_layer(config, self.G, self.M, self.con_time_step, self.context_len,
+																self.y1, self.y2)
 	
 
 	def initialize(self):
@@ -97,7 +100,8 @@ class BiDAF(object):
 		return
 
 	def word_embedding_layer(self, config, wordic, x, q, con_time_step, que_time_step):
-		print("** Word embedding layer")
+		now = time.localtime()
+		print("** Word embedding layer ({}:{}:{})".format(now.tm_hour, now.tm_min, now.tm_sec))
 		glove = {}
 		embedding_table = []
 		with open('data/glove/glove.6B.'+str(config.word_embedding_size)+'d.txt', 'r', encoding='utf-8', errors='ignore') as f:
@@ -130,7 +134,8 @@ class BiDAF(object):
 		with tf.name_scope("Contextual_embeding_layer") as layer_scope:
 			for switch in [("context", X, con_time_step, context_len), ("question", Q, que_time_step, question_len)]:
 				with tf.variable_scope(switch[0]) as v_scope:
-					print("*** Contextual embeding layer (" + switch[0] + ")")
+					now = time.localtime()
+					print("*** Contextual embeding layer - {} ({}:{}:{})".format(switch[0], now.tm_hour, now.tm_min, now.tm_sec))
 					if switch[0] == "context":
 						H = bidirectional_LSTM(switch[1], switch[2], switch[3], config.lstm_hidden_size, 2)
 						# (?, context time step, 2d)
@@ -144,7 +149,8 @@ class BiDAF(object):
 	
 	def attention_flow_layer(self, config, H, U):	
 		with tf.name_scope("Attention_flow_layer") as layer_scope:
-			print("**** Attention flow layer")
+			now = time.localtime()
+			print("**** Attention flow layer ({}:{}:{})".format(now.tm_hour, now.tm_min, now.tm_sec))
 			H = tf.transpose(H, [0, 2, 1])
 			# (?, context time step, 2d)
 			print(H, U)
@@ -183,7 +189,8 @@ class BiDAF(object):
 
 	def modeling_layer(self, config, G, con_time_step, context_len):
 		with tf.name_scope("Modeling_layer") as layer_scope:
-			print("***** Modeling layer ")
+			now = time.localtime()
+			print("***** Modeling layer ({}:{}:{})".format(now.tm_hour, now.tm_min, now.tm_sec))
 			G = tf.unstack(G, con_time_step, 2)
 			# (batch, 8d) * con_time_step
 						
@@ -192,9 +199,10 @@ class BiDAF(object):
 
 		return M
 
-	def output_layer(self, config, G, M, con_time_step, context_len):
+	def output_layer(self, config, G, M, con_time_step, context_len, y1, y2):
 		with tf.name_scope("Output_layer") as layer_scope:
-			print("****** Output layer ")
+			now = time.localtime()
+			print("****** Output layer ({}:{}:{})".format(now.tm_hour, now.tm_min, now.tm_sec))
 			G_M = tf.concat([G, M], axis=1)
 			print("G_M : ", G_M)
 			# (?, 10d, time step)
@@ -205,17 +213,18 @@ class BiDAF(object):
 
 			w_p1 = tf.expand_dims(w_p1, 1)
 			w_p1 = tf.expand_dims(w_p1, 0)
-			p1 = tf.nn.softmax(tf.reduce_sum(tf.multiply(w_p1, G_M), 1), 1)
+			p1 = tf.reduce_sum(tf.multiply(w_p1, G_M), 1)
 			print("p1 : ", p1)
 			# (?, time step)
 
-			M = tf.unstack(M, con_time_step, 2)
+			with tf.variable_scope('asdf') as scope:
+				MM = tf.unstack(M, con_time_step, 2)
 			# (batch_size, embedding_size) * time_step_size
-			M2 = bidirectional_LSTM(M, con_time_step, context_len, config.lstm_hidden_size, 1)
+				M2 = bidirectional_LSTM(MM, con_time_step, context_len, config.lstm_hidden_size, 1)
 			# (?, 2d, time step)
 	
 			G_M2 = tf.concat([G, M2], axis=1)
-			print("G_M : ", G_M2)
+			print("G_M2 : ", G_M2)
 			# (?, 10d, time step)
 
 			w_p2 = tf.Variable(tf.random_normal([5*M.get_shape().as_list()[1]]))
@@ -224,34 +233,42 @@ class BiDAF(object):
 
 			w_p2 = tf.expand_dims(w_p2, 1)
 			w_p2 = tf.expand_dims(w_p2, 0)
-			p2 = tf.nn.softmax(tf.reduce_sum(tf.multiply(w_p2, G_M2), 1), 1)
+			p2 = tf.reduce_sum(tf.multiply(w_p2, G_M2), 1)
 			print("p2 : ", p2)
 			# (?, time step)
 
+			loss_1 = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y1, logits=p1))
+			loss_2 = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y2, logits=p2))
+			print('loss _ 1,2 : ', loss_1, loss_2)
+			Loss = loss_1 + loss_2
+			print('Loss : ', Loss)
+			correct_pred_1 = tf.cast(tf.equal(tf.argmax(p1,1), tf.argmax(y1,1)), tf.int32)
+			correct_pred_2 = tf.cast(tf.equal(tf.argmax(p2,1), tf.argmax(y2,1)), tf.int32)
+			print('correct pred 1,2 : ', correct_pred_1, correct_pred_2)
+			correct_pred = correct_pred_1 * correct_pred_2
+			print('correct pred : ', correct_pred)
+			accuracy = tf.reduce_mean(correct_pred)
+			print('accuracy : ', accuracy)
+			return
 			'''
-			correct_pred = tf.equal(tf.argmax(p1,1), tf.argmax(p2,1))
-			self.accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
-
-
 			self.global_step = tf.Variable(0, name="global_step", trainable=False)
 			tvars = tf.trainable_variables()
-			grads, _ = tf.clip_by_global_norm(tf.gradients(self.cost, tvars), self.max_grad_norm)
+			grads, _ = tf.clip_by_global_norm(tf.gradients(Loss, tvars), config.max_grad_norm)
 
 
 			optimizer = tf.train.AdamOptimizer(learning_rate=self.lr)
 			self.train = optimizer.apply_gradients(
 																	zip(grads, tvars),
 																	global_step = self.global_step)
-			self.new_lr = tf.placeholder(tf.float32, shape=[])
+			new_lr = tf.placeholder(tf.float32, shape=[])
 
-			self.lr_update = tf.assign(self.lr, self.new_lr)
+			lr_update = tf.assign(lr, new_lr)
 			'''
-			return
-
+	'''
 	def assign_lr(self, lr_value):
 		sess = self.session
 		sess.run(self.lr_update, feed_dict={self.new_lr : lr_value})
-
+	'''
 
 	def cnn(self):
 		self.x = tf.placeholder(tf.int32, [None, self.sequence_length])
