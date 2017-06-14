@@ -35,7 +35,7 @@ def get_config():
     flags.DEFINE_string("num_filters", 128, "The number fo filters per filter size")
 
     # Train
-    flags.DEFINE_string("batch_size", 20, "Batch size")
+    flags.DEFINE_string("batch_size", 60, "Batch size")
     flags.DEFINE_string("max_epoch", 10, "epoch")
 
 

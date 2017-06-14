@@ -86,6 +86,7 @@ def get_score(logit_s, logit_e, context, context_len, answer):
     for c, s_idx, e_idx in zip(context, start_idx, end_idx):
         predictions.append(' '.join([w for w in c[s_idx:e_idx+1]]))
     em = f1 = 0
+    cnt = 0
     for prediction, ground_truth in zip(predictions, answer):
         single_em = metric_max_over_ground_truths(
                 exact_match_score, prediction, ground_truth)
@@ -93,9 +94,11 @@ def get_score(logit_s, logit_e, context, context_len, answer):
                 f1_score, prediction, ground_truth)
         em += single_em
         f1 += single_f1
-        if single_f1 > 0 :
-            print("pred : {} , s_idx : {}, e_idx : {}".format(str(' '.join(prediction)), start_idx, end_idx))
+        if f1 > 0 :
+            print("pred : {} , s_idx : {}, e_idx : {}".format(
+                str(' '.join(prediction)), start_idx[cnt], end_idx[cnt]))
             print("real : " + str(ground_truth))
+        cnt += 1
     print("em score : ", em / len(predictions))
     print("f1 score : ", f1 / len(predictions))
     return em, f1

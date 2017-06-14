@@ -101,6 +101,7 @@ class BiDAF(object):
             embed_x = tf.nn.embedding_lookup(embeddings, x)
             embed_q = tf.nn.embedding_lookup(embeddings, q)
                     # embed : shape = (batch_size, time_step_size, embedding_size)
+            embed_x = tf.Print(embed_x, [x, embed_x], "x, embed_x : ")
             embed_x = tf.unstack(embed_x, con_time_step, 1)
             embed_q = tf.unstack(embed_q, que_time_step, 1)
                     # embed : shape = (batch_size, embedding_size) * time_step_size
@@ -128,15 +129,35 @@ class BiDAF(object):
         with tf.variable_scope("Attention_flow_layer") as v_scope:
             now = time.localtime()
             print("**** Attention flow layer ({}:{}:{})".format(now.tm_hour, now.tm_min, now.tm_sec))
-            H = tf.transpose(H, [0, 2, 1])
-            # (?, context time step, 2d)
-            print(H, U)
-            
-            S = tf.matmul(H, U)
-            # (?, context time step, que time step)
-            print('S : ',S)
+           
+            B = H.get_shape().as_list()[0]  # batch size
+            T = H.get_shape().as_list()[-1] # len of context
+            J = U.get_shape().as_list()[-1] # len of question
+            D = H.get_shape().as_list()[1]  # dimension
+           
+            H_trans = tf.transpose(H, [0, 2, 1]) # (B, T, D)
+            U_trans = tf.transpose(U, [0, 2, 1]) # (B, J, D)
+            HH = tf.expand_dims(H_trans, 2)     # (B, T, 1, D)
+            HH = tf.tile(HH, [1, 1, J, 1])      # (B, T, J, D)
+            UU = tf.expand_dims(U_trans, 1)     # (B, 1, J, D)
+            H_mul_U = tf.multiply(HH, UU)       # (B, T, J, D)
+            H_mul_U = tf.reshape(H_mul_U, [-1, T*J, D]) # (B, T*J, D)
+
+            HHH = tf.reshape(HH, [-1, T*J, D])
+            UUU = tf.tile(U_trans, [1, T, 1])
+
+            concat = tf.concat([HHH, UUU, H_mul_U], 2) # (B, T*J, 3D)
+
+            w_s = tf.Variable(tf.random_normal([3*D, 1]))
+
+            reshape = tf.reshape(concat, [-1, 3*D]) # (B*T*J, 3D)
+            alpha = tf.matmul(reshape, w_s)         # (B*T*J, 1)
+            S = tf.reshape(alpha, [-1, T, J])       # (B, T, J)
+            print('S : ', S)
+
             
             a = tf.nn.softmax(S, -1)
+            a = tf.Print(a, [S, a], "S, a : ", -1)
             # (?, context time step, que time step)
             print('a : ',a)
 
@@ -145,10 +166,9 @@ class BiDAF(object):
             print('attended_U : ', attended_U)
 
             b = tf.nn.softmax(tf.reduce_max(S, 2), -1)
+            b = tf.Print(b, [S, b], "S, b : ", -1)
             # (?, context time step)
             print('b : ', b)
-
-            H = tf.transpose(H, [0, 2, 1])
 
             attended_H = tf.multiply(H, tf.expand_dims(b, 1))
             # (?, 2d, context time step)
@@ -191,6 +211,7 @@ class BiDAF(object):
             w_p1 = tf.expand_dims(w_p1, 1)
             w_p1 = tf.expand_dims(w_p1, 0)
             p1 = tf.reduce_sum(tf.multiply(w_p1, G_M), 1)
+            p1 = tf.Print(p1, [p1], "p1 : ")
             print("p1 : ", p1)
             # (?, time step)
 
@@ -212,6 +233,7 @@ class BiDAF(object):
             w_p2 = tf.expand_dims(w_p2, 1)
             w_p2 = tf.expand_dims(w_p2, 0)
             p2 = tf.reduce_sum(tf.multiply(w_p2, G_M2), 1)
+            p2 = tf.Print(p2, [p2], "p2 : ")
             print("p2 : ", p2)
             # (?, time step)
 
