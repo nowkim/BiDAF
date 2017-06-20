@@ -25,7 +25,7 @@ def get_config():
     flags.DEFINE_string("lstm_hidden_size", 100, "hidden size of lstm")
     flags.DEFINE_string("keep_prob", 0.2, "drop out")
     flags.DEFINE_string("num_lstm_layer", 1, "the number of lstm layers")
-    flags.DEFINE_string("lr", 0.005, "learning rate")
+    flags.DEFINE_string("lr", 0.001, "learning rate")
     flags.DEFINE_string("lr_decay", 0.9, "the decay of the learning rate for each epoch after 'lr_init_epoch'")
     flags.DEFINE_string("lr_init_epoch", 5, "the number of epochs trained with the initial learning rate")
     flags.DEFINE_string("max_grad_norm", 5, "gradient clipping")

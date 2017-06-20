@@ -6,12 +6,13 @@ import math
 import json
 import copy
 
-from evaluate import normalize_answer
+from evaluate import normalize_answer, reset_idx
 
 def read_data(config):
     data_types = ['train', 'dev']
     max_len_context = 0
     max_len_question = 0
+    max_len_word = 0
     train_data = {}
     dev_data = {}
     data = {}
@@ -21,23 +22,39 @@ def read_data(config):
     for data_type in data_types:
         with open(os.path.join(config.data_dir, "{}-v1.1.json".format(data_type)), "r", encoding='utf-8', errors='ignore') as f:
             tmp = json.load(f)
-            for i in range(len(tmp["data"])):
-                for j in range(len(tmp["data"][i]["paragraphs"])):
-                    context = tmp["data"][i]["paragraphs"][j]["context"]
-                    tmp["data"][i]["paragraphs"][j]["context"] = normalize_answer(context).split()
-                    context = normalize_answer(context).split()
-                    tmp["data"][i]["paragraphs"][j]["seqlen"] = len(context)
-                    if len(context) > max_len_context:
-                        max_len_context = len(context)
-                    for k in range(len(tmp["data"][i]["paragraphs"][j]["qas"])):
+            for i, i_val in enumerate(tmp['data']):
+                for j, j_val in enumerate(i_val['paragraphs']):
+                    context = j_val["context"]
+                    for k, k_val in enumerate(j_val['qas']):
+                        # normalize qustions and read data
                         if data_type == 'train':train_q_num += 1
                         else: dev_q_num += 1
-                        question = tmp["data"][i]["paragraphs"][j]["qas"][k]["question"]
-                        tmp["data"][i]["paragraphs"][j]["qas"][k]["question"] = normalize_answer(question).split()
+                        question = k_val["question"]
+                        k_val["question"] = normalize_answer(question).split()
                         question = normalize_answer(question).split()
-                        tmp["data"][i]["paragraphs"][j]["qas"][k]["quelen"] = len(question)
+                        k_val["quelen"] = len(question)
+                        wordlen = []
+                        for word in question:
+                            if len(word) > max_len_word:
+                                max_len_word = len(word)
+                            wordlen.append(len(word))
+                        k_val["wordlen"] = wordlen
                         if len(question) > max_len_question:
                             max_len_question = len(question)
+                        for l, l_val in enumerate(k_val["answers"]) :
+                            l_val["answer_start"] = reset_idx(context, l_val["answer_start"])
+                    # normalize contexts and read data
+                    j_val["context"] = normalize_answer(context).split()
+                    context = normalize_answer(context).split()
+                    j_val["seqlen"] = len(context)
+                    wordlen = []
+                    for word in context:
+                        if len(word) > max_len_word:
+                            max_len_word = len(word)
+                        wordlen.append(len(word))
+                    j_val["wordlen"] = wordlen
+                    if len(context) > max_len_context:
+                        max_len_context = len(context)
             if data_type == "train":
                 train_data = tmp
             else:
@@ -51,7 +68,7 @@ def read_data(config):
     np.random.shuffle(data["dev"]["data"])
     
     # padding #
-    #max_len_context = 300
+    #max_len_context = 100
     padding_with_limit(max_len_context, max_len_question, data)
 
     '''
@@ -68,9 +85,10 @@ def read_data(config):
     print("Loading {} dev data".format(len(data["dev"]["data"])))
     print("max length of context :  {}".format(max_len_context))
     print("max length of question :  {}".format(max_len_question))
+    print("max length of word :  {}".format(max_len_word))
     print("the num of question : {}(train), {}(dev)".format(train_q_num, dev_q_num))
 
-    return data, max_len_context, max_len_question
+    return data, max_len_context, max_len_question, max_len_word
 
 
 def padding_with_limit(c_limit, q_limit, data):
@@ -79,7 +97,7 @@ def padding_with_limit(c_limit, q_limit, data):
         for j, j_val in enumerate(data[i]["data"]):
             for k, k_val in enumerate(j_val["paragraphs"]):
                 if len(k_val["context"]) < c_limit:
-                    for _ in range(len(k_val["context"]), c_limit):
+                    for j in range(len(k_val["context"]), c_limit):
                         k_val["context"].append("$PAD$")
                 else:
                     k_val["context"] = k_val["context"][:c_limit]

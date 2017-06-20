@@ -16,9 +16,8 @@ def main():
     #####  pre-process #####
 
     # read data
-    data, max_len_context, max_len_question = read_data(config)
+    data, max_len_context, max_len_question, max_len_word = read_data(config)
 
-    
     # write a word dictionary
     wordic = write_wordic(config, data['train'])
 

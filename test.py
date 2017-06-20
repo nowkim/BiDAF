@@ -1,269 +1,132 @@
-import numpy as np
-from prepro import *
-from config import *
-
-config = get_config()
-
-    #####  pre-process #####
-
-    # read data
-data, max_len_context, max_len_question = read_data(config)
-
-    
-    # write a word dictionary
-wordic = write_wordic(config, data['train'])
-
-text = [['in', '2007', 'two', 'faa', 'whistleblowers', 'inspectors', 'charalambe', 'bobby',
-'boutris', 'and', 'douglas', 'e', 'peters', 'alleged', 'that', 'boutris', 'said', 'he', 'attempted',
-'to', 'ground', 'southwest', 'after', 'finding', 'cracks', 'in', 'fuselage', 'but', 'was',
-'prevented', 'by', 'supervisors', 'he', 'said', 'were', 'friendly', 'with', 'airline', 'this',
-'was', 'validated', 'by', 'report', 'by', 'department', 'of', 'transportation', 'which', 'found',
-'faa', 'managers', 'had', 'allowed', 'southwest', 'airlines', 'to', 'fly', '46', 'airplanes', 'in',
-'2006', 'and', '2007', 'that', 'were', 'overdue', 'for', 'safety', 'inspections', 'ignoring',
-'concerns', 'raised', 'by', 'inspectors', 'audits', 'of', 'other', 'airlines', 'resulted', 'in',
-'two', 'airlines', 'grounding', 'hundreds', 'of', 'planes', 'causing', 'thousands', 'of', 'flight',
-'cancellations', 'house', 'transportation', 'and', 'infrastructure', 'committee', 'held',
-'hearings', 'in', 'april', '2008', 'jim', 'oberstar', 'former', 'chairman', 'of', 'committee',
-'said', 'its', 'investigation', 'uncovered', 'pattern', 'of', 'regulatory', 'abuse', 'and',
-'widespread', 'regulatory', 'lapses', 'allowing', '117', 'aircraft', 'to', 'be', 'operated',
-'commercially', 'although', 'not', 'in', 'compliance', 'with', 'faa', 'safety', 'rules', 'oberstar',
-'said', 'there', 'was', 'culture', 'of', 'coziness', 'between', 'senior', 'faa', 'officials', 'and',
-'airlines', 'and', 'systematic', 'breakdown', 'in', 'faas', 'culture', 'that', 'resulted', 'in',
-'malfeasance', 'bordering', 'on', 'corruption', 'in', '2008', 'faa', 'proposed', 'to', 'fine',
-'southwest', '102', 'million', 'for', 'failing', 'to', 'inspect', 'older', 'planes', 'for',
-'cracks', 'and', 'in', '2009', 'southwest', 'and', 'faa', 'agreed', 'that', 'southwest', 'would',
-'pay', '75', 'million', 'penalty', 'and', 'would', 'adopt', 'new', 'safety', 'procedures', 'with',
-'fine', 'doubling', 'if', 'southwest', 'failed', 'to', 'follow', 'through', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$'], ['on', 'july', '22', '2008', 'in', 'aftermath', 'of',
-'southwest', 'airlines', 'inspection', 'scandal', 'bill', 'was', 'unanimously', 'approved', 'in',
-'house', 'to', 'tighten', 'regulations', 'concerning', 'airplane', 'maintenance', 'procedures',
-'including', 'establishment', 'of', 'whistleblower', 'office', 'and', 'twoyear', 'cooling', 'off',
-'period', 'that', 'faa', 'inspectors', 'or', 'supervisors', 'of', 'inspectors', 'must', 'wait',
-'before', 'they', 'can', 'work', 'for', 'those', 'they', 'regulated', 'bill', 'also', 'required',
-'rotation', 'of', 'principal', 'maintenance', 'inspectors', 'and', 'stipulated', 'that', 'word',
-'customer', 'properly', 'applies', 'to', 'flying', 'public', 'not', 'those', 'entities',
-'regulated', 'by', 'faa', 'bill', 'died', 'in', 'senate', 'committee', 'that', 'year', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$'], ['on', 'july', '22',
-'2008', 'in', 'aftermath', 'of', 'southwest', 'airlines', 'inspection', 'scandal', 'bill', 'was',
-'unanimously', 'approved', 'in', 'house', 'to', 'tighten', 'regulations', 'concerning', 'airplane',
-'maintenance', 'procedures', 'including', 'establishment', 'of', 'whistleblower', 'office', 'and',
-'twoyear', 'cooling', 'off', 'period', 'that', 'faa', 'inspectors', 'or', 'supervisors', 'of',
-'inspectors', 'must', 'wait', 'before', 'they', 'can', 'work', 'for', 'those', 'they', 'regulated',
-'bill', 'also', 'required', 'rotation', 'of', 'principal', 'maintenance', 'inspectors', 'and',
-'stipulated', 'that', 'word', 'customer', 'properly', 'applies', 'to', 'flying', 'public', 'not',
-'those', 'entities', 'regulated', 'by', 'faa', 'bill', 'died', 'in', 'senate', 'committee', 'that',
-'year', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$'], ['on',
-'july', '22', '2008', 'in', 'aftermath', 'of', 'southwest', 'airlines', 'inspection', 'scandal',
-'bill', 'was', 'unanimously', 'approved', 'in', 'house', 'to', 'tighten', 'regulations',
-'concerning', 'airplane', 'maintenance', 'procedures', 'including', 'establishment', 'of',
-'whistleblower', 'office', 'and', 'twoyear', 'cooling', 'off', 'period', 'that', 'faa',
-'inspectors', 'or', 'supervisors', 'of', 'inspectors', 'must', 'wait', 'before', 'they', 'can',
-'work', 'for', 'those', 'they', 'regulated', 'bill', 'also', 'required', 'rotation', 'of',
-'principal', 'maintenance', 'inspectors', 'and', 'stipulated', 'that', 'word', 'customer',
-'properly', 'applies', 'to', 'flying', 'public', 'not', 'those', 'entities', 'regulated', 'by',
-'faa', 'bill', 'died', 'in', 'senate', 'committee', 'that', 'year', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$']]
+""" Official evaluation script for v1.1 of the SQuAD dataset. """
+from __future__ import print_function
+from collections import Counter
+import string
+import re
+import argparse
+import json
+import sys
+import copy
 
 
-text = [['i','he','you'],['i','he','you'],['i','she','me']]
+def reset_idx(context, s_idx):
+    def white_space_fix(text):
+        return ' '.join(text.split())
 
-text = [['emotions', 'are', 'complex', 'according', 'to', 'some', 'theories', 'they', 'are',
-'state', 'of', 'feeling', 'that', 'results', 'in', 'physical', 'and', 'psychological', 'changes',
-'that', 'influence', 'our', 'behavior', 'physiology', 'of', 'emotion', 'is', 'closely', 'linked',
-'to', 'arousal', 'of', 'nervous', 'system', 'with', 'various', 'states', 'and', 'strengths', 'of',
-'arousal', 'relating', 'apparently', 'to', 'particular', 'emotions', 'emotion', 'is', 'also',
-'linked', 'to', 'behavioral', 'tendency', 'extroverted', 'people', 'are', 'more', 'likely', 'to',
-'be', 'social', 'and', 'express', 'their', 'emotions', 'while', 'introverted', 'people', 'are',
-'more', 'likely', 'to', 'be', 'more', 'socially', 'withdrawn', 'and', 'conceal', 'their',
-'emotions', 'emotion', 'is', 'often', 'driving', 'force', 'behind', 'motivation', 'positive', 'or',
-'negative', 'definition', 'has', 'been', 'described', 'as', 'is', 'positive', 'or', 'negative',
-'experience', 'that', 'is', 'associated', 'with', 'particular', 'pattern', 'of', 'physiological',
-'activity', 'according', 'to', 'other', 'theories', 'emotions', 'are', 'not', 'causal', 'forces',
-'but', 'simply', 'syndromes', 'of', 'components', 'which', 'might', 'include', 'motivation',
-'feeling', 'behavior', 'and', 'physiological', 'changes', 'but', 'no', 'one', 'of', 'these',
-'components', 'is', 'emotion', 'nor', 'is', 'emotion', 'entity', 'that', 'causes', 'these',
-'components', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-'$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$'],
-['emotions', 'are', 'complex', 'according', 'to', 'some', 'theories', 'they', 'are', 'state', 'of',
-    'feeling', 'that', 'results', 'in', 'physical', 'and', 'psychological', 'changes', 'that',
-    'influence', 'our', 'behavior', 'physiology', 'of', 'emotion', 'is', 'closely', 'linked', 'to',
-    'arousal', 'of', 'nervous', 'system', 'with', 'various', 'states', 'and', 'strengths', 'of',
-    'arousal', 'relating', 'apparently', 'to', 'particular', 'emotions', 'emotion', 'is', 'also',
-    'linked', 'to', 'behavioral', 'tendency', 'extroverted', 'people', 'are', 'more', 'likely',
-    'to', 'be', 'social', 'and', 'express', 'their', 'emotions', 'while', 'introverted', 'people',
-    'are', 'more', 'likely', 'to', 'be', 'more', 'socially', 'withdrawn', 'and', 'conceal', 'their',
-    'emotions', 'emotion', 'is', 'often', 'driving', 'force', 'behind', 'motivation', 'positive',
-    'or', 'negative', 'definition', 'has', 'been', 'described', 'as', 'is', 'positive', 'or',
-    'negative', 'experience', 'that', 'is', 'associated', 'with', 'particular', 'pattern', 'of',
-    'physiological', 'activity', 'according', 'to', 'other', 'theories', 'emotions', 'are', 'not',
-    'causal', 'forces', 'but', 'simply', 'syndromes', 'of', 'components', 'which', 'might',
-    'include', 'motivation', 'feeling', 'behavior', 'and', 'physiological', 'changes', 'but', 'no',
-    'one', 'of', 'these', 'components', 'is', 'emotion', 'nor', 'is', 'emotion', 'entity', 'that',
-    'causes', 'these', 'components', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$'], ['emotions', 'are', 'complex', 'according', 'to',
-            'some', 'theories', 'they', 'are', 'state', 'of', 'feeling', 'that', 'results', 'in',
-            'physical', 'and', 'psychological', 'changes', 'that', 'influence', 'our', 'behavior',
-            'physiology', 'of', 'emotion', 'is', 'closely', 'linked', 'to', 'arousal', 'of',
-            'nervous', 'system', 'with', 'various', 'states', 'and', 'strengths', 'of', 'arousal',
-            'relating', 'apparently', 'to', 'particular', 'emotions', 'emotion', 'is', 'also',
-            'linked', 'to', 'behavioral', 'tendency', 'extroverted', 'people', 'are', 'more',
-            'likely', 'to', 'be', 'social', 'and', 'express', 'their', 'emotions', 'while',
-            'introverted', 'people', 'are', 'more', 'likely', 'to', 'be', 'more', 'socially',
-            'withdrawn', 'and', 'conceal', 'their', 'emotions', 'emotion', 'is', 'often', 'driving',
-            'force', 'behind', 'motivation', 'positive', 'or', 'negative', 'definition', 'has',
-            'been', 'described', 'as', 'is', 'positive', 'or', 'negative', 'experience', 'that',
-            'is', 'associated', 'with', 'particular', 'pattern', 'of', 'physiological', 'activity',
-            'according', 'to', 'other', 'theories', 'emotions', 'are', 'not', 'causal', 'forces',
-            'but', 'simply', 'syndromes', 'of', 'components', 'which', 'might', 'include',
-            'motivation', 'feeling', 'behavior', 'and', 'physiological', 'changes', 'but', 'no',
-            'one', 'of', 'these', 'components', 'is', 'emotion', 'nor', 'is', 'emotion', 'entity',
-            'that', 'causes', 'these', 'components', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-            '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-            '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-            '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-            '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-            '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-            '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-            '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-            '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-            '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-            '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-            '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-            '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-            '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-            '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-            '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-            '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-            '$PAD$', '$PAD$', '$PAD$'], ['emotions', 'are', 'complex', 'according', 'to', 'some',
-                    'theories', 'they', 'are', 'state', 'of', 'feeling', 'that', 'results', 'in',
-                    'physical', 'and', 'psychological', 'changes', 'that', 'influence', 'our',
-                    'behavior', 'physiology', 'of', 'emotion', 'is', 'closely', 'linked', 'to',
-                    'arousal', 'of', 'nervous', 'system', 'with', 'various', 'states', 'and',
-                    'strengths', 'of', 'arousal', 'relating', 'apparently', 'to', 'particular',
-                    'emotions', 'emotion', 'is', 'also', 'linked', 'to', 'behavioral', 'tendency',
-                    'extroverted', 'people', 'are', 'more', 'likely', 'to', 'be', 'social', 'and',
-                    'express', 'their', 'emotions', 'while', 'introverted', 'people', 'are', 'more',
-                    'likely', 'to', 'be', 'more', 'socially', 'withdrawn', 'and', 'conceal',
-                    'their', 'emotions', 'emotion', 'is', 'often', 'driving', 'force', 'behind',
-                    'motivation', 'positive', 'or', 'negative', 'definition', 'has', 'been',
-                    'described', 'as', 'is', 'positive', 'or', 'negative', 'experience', 'that',
-                    'is', 'associated', 'with', 'particular', 'pattern', 'of', 'physiological',
-                    'activity', 'according', 'to', 'other', 'theories', 'emotions', 'are', 'not',
-                    'causal', 'forces', 'but', 'simply', 'syndromes', 'of', 'components', 'which',
-                    'might', 'include', 'motivation', 'feeling', 'behavior', 'and', 'physiological',
-                    'changes', 'but', 'no', 'one', 'of', 'these', 'components', 'is', 'emotion',
-                    'nor', 'is', 'emotion', 'entity', 'that', 'causes', 'these', 'components',
-                    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-                    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-                    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-                    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-                    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-                    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-                    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-                    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-                    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-                    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-                    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-                    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-                    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-                    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-                    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-                    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$',
-                    '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$', '$PAD$']]
+    def remove_articles(text):
+        return re.sub(r'\b(a|an|the)\b', ' ', text)
 
-output = word2index(text, wordic)
+    def remove_punc(text):
+        exclude = set(string.punctuation)
+        return ''.join(ch for ch in text if ch not in exclude)
 
-print(output)
+    def lower(text):
+        return text.lower()
+    s = copy.deepcopy(context[:s_idx])
+    sl = len(s)
+    fs = white_space_fix(remove_articles(remove_punc(lower(s))))
+    fsl = len(fs)
+    return s_idx - (sl - fsl) + 1
+
+
+def normalize_answer(s):
+    """Lower text and remove punctuation, articles and extra whitespace."""
+    def remove_articles(text):
+        return re.sub(r'\b(a|an|the)\b', ' ', text)
+
+    def white_space_fix(text):
+        return ' '.join(text.split())
+
+    def remove_punc(text):
+        exclude = set(string.punctuation)
+        return ''.join(ch for ch in text if ch not in exclude)
+
+    def lower(text):
+        return text.lower()
+
+    return white_space_fix(remove_articles(remove_punc(lower(s))))
+
+
+def f1_score(prediction, ground_truth):
+    print(" f1 ~~~~ ")
+    prediction_tokens = normalize_answer(prediction).split()
+    print("prediction tokens : ", prediction_tokens)
+    ground_truth_tokens = normalize_answer(ground_truth).split()
+    print("ground truth tokens : ", ground_truth_tokens)
+    common = Counter(prediction_tokens) & Counter(ground_truth_tokens)
+    print("common : ", common)
+    num_same = sum(common.values())
+    if num_same == 0:
+        return 0
+    precision = 1.0 * num_same / len(prediction_tokens)
+    recall = 1.0 * num_same / len(ground_truth_tokens)
+    print("precision, recall : ", precision, recall)
+    f1 = (2 * precision * recall) / (precision + recall)
+    print("f1 : ", f1)
+    return f1
+
+
+def exact_match_score(prediction, ground_truth):
+    print(" ----- em  !!! ")
+    print("norm pred : ", normalize_answer(prediction))
+    print("norm ground truth : ", normalize_answer(ground_truth))
+    print(" em ? : ", normalize_answer(prediction) == normalize_answer(ground_truth))
+    return (normalize_answer(prediction) == normalize_answer(ground_truth))
+
+
+def metric_max_over_ground_truths(metric_fn, prediction, ground_truths):
+    scores_for_ground_truths = []
+    for ground_truth in ground_truths:
+        score = metric_fn(prediction, ground_truth)
+        scores_for_ground_truths.append(score)
+    return max(scores_for_ground_truths)
+
+
+def evaluate(dataset, predictions):
+    f1 = exact_match = total = 0
+    for article in dataset:
+        for paragraph in article['paragraphs']:
+            for qa in paragraph['qas']:
+                total += 1
+                if qa['id'] not in predictions:
+                    message = 'Unanswered question ' + qa['id'] + \
+                            ' will receive score 0.'
+                    print(message, file=sys.stderr)
+                    continue
+                ground_truths = list(map(lambda x: x['text'], qa['answers']))
+                prediction = predictions[qa['id']]
+                exact_match += metric_max_over_ground_truths(
+                        exact_match_score, prediction, ground_truths)
+                f1 += metric_max_over_ground_truths(
+                        f1_score, prediction, ground_truths)
+
+    exact_match = 100.0 * exact_match / total
+    f1 = 100.0 * f1 / total
+
+    return {'exact_match': exact_match, 'f1': f1}
+
+'''
+em = f1 = 0
+predictions = ["by limits of parish of st philip and st michael now also includes parts of st james parish st georges parish st andrews parish and st johns parish although last two are mostly still incorporated rural parishes"]
+answer = [["St. Andrew's Parish"]]
+for prediction, ground_truth in zip(predictions, answer):
+    single_em = metric_max_over_ground_truths(
+            exact_match_score, prediction, ground_truth)
+    single_f1 = metric_max_over_ground_truths(
+            f1_score, prediction, ground_truth)
+    print("sigle_em, f1 : ", single_em, single_f1)
+    em += single_em
+    f1 += single_f1
+    print("pred : " + prediction)
+    print("real : " + ground_truth)
+print("em score : ", em / len(predictions))
+print("f1 score : ", f1 / len(predictions))
+'''
+
+start_idx = [np.argmax(sl[:cl], 0)
+        for sl, cl in zip(logit_s, context_len)]
+end_idx = [np.argmax(el[si:cl], 0) + si
+        for el, si, cl in zip(logit_e, start_idx, context_len)]
+print("start, end idx : ", start_idx, end_idx)
 
 

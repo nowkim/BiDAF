@@ -6,6 +6,27 @@ import re
 import argparse
 import json
 import sys
+import copy
+
+
+def reset_idx(context, s_idx):
+    def white_space_fix(text):
+        return ' '.join(text.split())
+
+    def remove_articles(text):
+        return re.sub(r'\b(a|an|the)\b', ' ', text)
+
+    def remove_punc(text):
+        exclude = set(string.punctuation)
+        return ''.join(ch for ch in text if ch not in exclude)
+
+    def lower(text):
+        return text.lower()
+    s = copy.deepcopy(context[:s_idx])
+    sl = len(s)
+    fs = white_space_fix(remove_articles(remove_punc(lower(s))))
+    fsl = len(fs)
+    return s_idx - (sl - fsl) + 1
 
 
 def normalize_answer(s):

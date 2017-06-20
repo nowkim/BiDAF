@@ -13,6 +13,7 @@ def run_epoch(config, model, wordic, max_len_context, step, data):
     Data = copy.deepcopy(data)
     
     iteration = 0
+    sum_em = sum_f1 = 0
     context, question, answer, context_len, question_len, y1, y2 = [],[],[],[],[],[],[]
     a_tmp, as_tmp, ae_tmp = [], [], []
     for data_idx, article in enumerate(Data['data']):
@@ -29,44 +30,53 @@ def run_epoch(config, model, wordic, max_len_context, step, data):
                         model.question_len : question_len,
                         model.y1 : y1,
                         model.y2 : y2,
-                        model.keep_prob : keep_prob
+                        model.keep_prob : keep_prob,
                     }
                     if step == 'train':
                         _ = sess.run(model.train, feed_dict=feed_dict)
-                        if iteration % 10 == 0:
+                        if iteration % 20 == 0:
                             time_str = datetime.datetime.now().isoformat()
-                            print("train start")
                             logit_s, logit_e, global_step, loss, grads, lr = sess.run(
-                                    [model.logit_s, model.logit_e, model.global_step, model.loss, model.grads, model.lr], 
+                                    [model.logit_s, model.logit_e, model.global_step, model.loss,
+                                        model.grads, model.lr], 
                                     feed_dict=feed_dict)
-                            print("{}, {}, Loss : {:g}, lr : {:g}".format(time_str,global_step, loss, lr))
-                            _, _ = get_score(logit_s, logit_e, context, context_len, answer)
-                            print("train complete")
+                            print("(train) {}, {}, Loss : {:g}, lr :{:g}"
+                                    .format(time_str,global_step, loss, lr))
+                            _, _ = get_score(logit_s, logit_e, context, context_len, answer, step)
                     else:
                         time_str = datetime.datetime.now().isoformat()
-                        print("validation start")
                         logit_s, logit_e, global_step, loss, grads, lr = sess.run(
-                                [model.logit_s, model.logit_e, model.global_step, model.loss, model.grads, model.lr], 
+                                [model.logit_s, model.logit_e, model.global_step, model.loss,
+                                    model.grads, model.lr], 
                                 feed_dict=feed_dict)
-                        print("{}, {}, Loss : {:g}, lr : {:g}".format(time_str,global_step, loss, lr))
-                        em, f1 = get_score(logit_s, logit_e, context, context_len, answer)
-                        print("validation complete")
-                        return em, f1
+                        print("(valid) {}, {}, Loss : {:g}, lr :{:g}"
+                                .format(time_str,global_step, loss, lr))
+                        em, f1 = get_score(logit_s, logit_e, context, context_len, answer, step)
+                        sum_em += em
+                        sum_f1 += f1
+                        print("len (qas) : ", len(paragraph['qas']))
+                        if iteration == len(paragraph['qas'])//batch_size :
+                            print("valid em : {}, f1 : {}".format(sum_em, sum_f1))
+                            return sum_em, sum_f1
                     context, question, answer, context_len, question_len, y1, y2 = [],[],[],[],[],[],[]
                 a_tmp, as_tmp, ae_tmp = [], [], []
                 as_tmp = np.zeros(max_len_context)
                 ae_tmp = np.zeros(max_len_context)
-                if max_len_context > qa['answers'][0]['answer_start']:
-                    as_tmp[qa['answers'][0]['answer_start']] = 1
-                else: as_tmp[max_len_context-1] = 1
-                if max_len_context > len(qa['answers'][0]['text'])+qa['answers'][0]['answer_start']:
-                    ae_tmp[len(qa['answers'][0]['text'])+qa['answers'][0]['answer_start']] = 1
+                char_len = 0
+                start_idx = 0
+                for i, word in enumerate(paragraph['context']):
+                    char_len += len(word) + 1
+                    if char_len == qa['answers'][0]['answer_start']:
+                        start_idx = i+1
+                        if max_len_context > start_idx:
+                            as_tmp[start_idx] = 1
+                        else: as_tmp[max_len_context-1] = 1
+                        break
+                if max_len_context > len(qa['answers'][0]['text'].split())+start_idx-1:
+                    ae_tmp[len(qa['answers'][0]['text'].split())+start_idx-1] = 1
                 else: ae_tmp[max_len_context-1] = 1
-                if step == 'train':
-                    a_tmp = qa['answers'][0]['text']
-                else:
-                    for a in qa['answers']:
-                        a_tmp.append(a['text'])
+                for a in qa['answers']:
+                    a_tmp.append(a['text'])
                 if len(question) < batch_size:
                     context.append(copy.deepcopy(paragraph['context']))
                     question.append(copy.deepcopy(qa['question']))
@@ -75,16 +85,29 @@ def run_epoch(config, model, wordic, max_len_context, step, data):
                     question_len.append(qa['quelen'])
                     y1.append(as_tmp)
                     y2.append(ae_tmp)
+                #print("context : ", context)
+                #print("question : ", question)
+                #print("answer : ", answer)
+                #print("context_len : ", context_len)
+                #print("question_len : ", question_len)
+                #print("y1 : ", y1)
+                #print("y2 : ", y2)
 
 
-def get_score(logit_s, logit_e, context, context_len, answer):
+def get_score(logit_s, logit_e, context, context_len, answer, step):
+    #print("info of answers : ", answer, type(answer), len(answer))
+    #print("context : ", context)
+    #print("logit : ", logit_s, logit_e)
+    #print("con len : ", context_len)
     start_idx = [np.argmax(sl[:cl], 0)
             for sl, cl in zip(logit_s, context_len)]
     end_idx = [np.argmax(el[si:cl], 0) + si
             for el, si, cl in zip(logit_e, start_idx, context_len)]
+    #print("start, end idx : ", start_idx, end_idx)
     predictions = []
     for c, s_idx, e_idx in zip(context, start_idx, end_idx):
         predictions.append(' '.join([w for w in c[s_idx:e_idx+1]]))
+    #print("predictions : ", predictions)
     em = f1 = 0
     cnt = 0
     for prediction, ground_truth in zip(predictions, answer):
@@ -92,12 +115,12 @@ def get_score(logit_s, logit_e, context, context_len, answer):
                 exact_match_score, prediction, ground_truth)
         single_f1 = metric_max_over_ground_truths(
                 f1_score, prediction, ground_truth)
+        #print("sigle_em, f1 : ", single_em, single_f1)
         em += single_em
         f1 += single_f1
-        if f1 > 0 :
-            print("pred : {} , s_idx : {}, e_idx : {}".format(
-                str(' '.join(prediction)), start_idx[cnt], end_idx[cnt]))
-            print("real : " + str(ground_truth))
+        #if step == 'dev':
+        #    print("pred : " + prediction)
+        #    print("real : " + ground_truth[0])
         cnt += 1
     print("em score : ", em / len(predictions))
     print("f1 score : ", f1 / len(predictions))
