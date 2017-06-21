@@ -34,7 +34,7 @@ def run_epoch(config, model, wordic, max_len_context, step, data):
                     }
                     if step == 'train':
                         _ = sess.run(model.train, feed_dict=feed_dict)
-                        if iteration % 20 == 0:
+                        if iteration % 30 == 0:
                             time_str = datetime.datetime.now().isoformat()
                             logit_s, logit_e, global_step, loss, grads, lr = sess.run(
                                     [model.logit_s, model.logit_e, model.global_step, model.loss,
@@ -55,8 +55,8 @@ def run_epoch(config, model, wordic, max_len_context, step, data):
                         sum_em += em
                         sum_f1 += f1
                         print("len (qas) : ", len(paragraph['qas']))
-                        if iteration == len(paragraph['qas'])//batch_size :
-                            print("valid em : {}, f1 : {}".format(sum_em, sum_f1))
+                        if q_idx+1 == len(paragraph['qas']) :
+                            print("valid em : {:g}, f1 : {:g}".format(sum_em / q_idx, sum_f1 / q_idx))
                             return sum_em, sum_f1
                     context, question, answer, context_len, question_len, y1, y2 = [],[],[],[],[],[],[]
                 a_tmp, as_tmp, ae_tmp = [], [], []
